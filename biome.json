@@ -15,8 +15,8 @@
     "lineEnding": "lf"
   },
   "json": {
-    "formatter": {
-      "trailingCommas": "all"
+    "linter": {
+      "enabled": false
     }
   }
 }
