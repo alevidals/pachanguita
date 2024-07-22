@@ -13,5 +13,10 @@
     "lineWidth": 80,
     "indentWidth": 2,
     "lineEnding": "lf"
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "all"
+    }
   }
 }
