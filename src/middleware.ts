@@ -7,14 +7,12 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get(BEARER_COOKIE_NAME)?.value;
 
-  if (!accessToken) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  if (accessToken) {
+    const acessTokenPayload = await getJwtPayload(accessToken);
 
-  const acessTokenPayload = await getJwtPayload(accessToken);
-
-  if (acessTokenPayload) {
-    return NextResponse.next();
+    if (acessTokenPayload) {
+      return NextResponse.next();
+    }
   }
 
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
