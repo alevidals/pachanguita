@@ -2,14 +2,14 @@
 
 import { db } from "@/db";
 import { usersTable } from "@/db/schemas";
-import { loginSchema } from "@/lib/schemas";
-import { eq } from "drizzle-orm";
-import bcrypt from "bcrypt";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@/lib/config";
 import { BEARER_COOKIE_NAME } from "@/lib/constants";
+import { loginSchema } from "@/lib/schemas";
+import bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 type FormState = {
   message: string | null;

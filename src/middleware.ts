@@ -1,5 +1,5 @@
 import { BEARER_COOKIE_NAME } from "@/lib/constants";
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const bearer = request.cookies.get(BEARER_COOKIE_NAME)?.value;
