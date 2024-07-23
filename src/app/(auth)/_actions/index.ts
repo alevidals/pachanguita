@@ -1,29 +1,16 @@
 "use server";
 
-import { db } from "@/db";
-import { usersTable } from "@/db/schemas";
-import { JWT_SECRET } from "@/lib/config";
-import { BEARER_COOKIE_NAME } from "@/lib/constants";
+import { BEARER_COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/lib/constants";
 import { loginSchema } from "@/lib/schemas";
+import { sign } from "@/services/auth";
+import { getUser, updateUser } from "@/services/users";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
-import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 type FormState = {
   message: string | null;
 };
-
-async function getUser(email: string) {
-  const user = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email))
-    .get();
-
-  return user;
-}
 
 export async function loginAction(
   prevState: FormState,
@@ -44,7 +31,7 @@ export async function loginAction(
 
   if (!user) {
     return {
-      message: "The user does not exists",
+      message: "The email or the password are not correct",
     };
   }
 
@@ -58,20 +45,39 @@ export async function loginAction(
 
   const cookieStore = cookies();
 
-  const token = jwt.sign(
-    {
+  const accessToken = await sign({
+    payload: {
       id: user.id,
       email: user.email,
     },
-    JWT_SECRET,
-    {
-      expiresIn: "1h",
-    },
-  );
+    expirationTime: "1 hour from now",
+  });
 
-  cookieStore.set(BEARER_COOKIE_NAME, token, {
+  const refreshToken = await sign({
+    payload: {
+      email: user.email,
+    },
+    expirationTime: "1 week from now",
+  });
+
+  await updateUser({
+    id: user.id,
+    data: {
+      refreshToken,
+    },
+  });
+
+  cookieStore.set(BEARER_COOKIE_NAME, accessToken, {
     path: "/",
     maxAge: 3600,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  cookieStore.set(REFRESH_COOKIE_NAME, refreshToken, {
+    path: "/",
+    maxAge: 604800,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",

@@ -8,10 +8,13 @@ export const usersTable = sqliteTable("users", {
   }).notNull(),
   email: text("email", {
     length: 50,
-  }).unique(),
+  })
+    .unique()
+    .notNull(),
   password: text("password", {
     length: 50,
   }).notNull(),
+  refreshToken: text("refresh_token").unique(),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
