@@ -1,16 +1,53 @@
 "use server";
 
+import {
+  getCurrentUser,
+  getUserByIdOrEmail,
+  updateUser,
+} from "@/app/(dashboard)/users/_actions";
+import { JWT_SECRET } from "@/lib/config";
 import { BEARER_COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/lib/constants";
 import { loginSchema } from "@/lib/schemas";
-import { sign } from "@/services/auth";
-import { getUser, updateUser } from "@/services/users";
-import bcrypt from "bcrypt";
+import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 type FormState = {
   message: string | null;
 };
+
+type SignArgs = {
+  payload: Record<string, string>;
+  expirationTime: string | number | Date;
+};
+
+function getSecretKey() {
+  return new TextEncoder().encode(JWT_SECRET);
+}
+
+export async function sign({ payload, expirationTime }: SignArgs) {
+  const key = getSecretKey();
+
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(expirationTime)
+    .sign(key);
+}
+
+export async function getJwtPayload(bearer: string) {
+  try {
+    const key = getSecretKey();
+
+    const jwt = await jwtVerify(bearer, key, {
+      algorithms: ["HS256"],
+    });
+
+    return jwt.payload;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function loginAction(
   prevState: FormState,
@@ -27,7 +64,7 @@ export async function loginAction(
 
   const { email, password } = parsed.data;
 
-  const user = await getUser(email);
+  const user = await getUserByIdOrEmail(email);
 
   if (!user) {
     return {
@@ -35,6 +72,7 @@ export async function loginAction(
     };
   }
 
+  const bcrypt = require("bcrypt");
   const isValid = await bcrypt.compare(password, user.password);
 
   if (!isValid) {
@@ -84,4 +122,24 @@ export async function loginAction(
   });
 
   redirect("/");
+}
+
+export async function logoutAction() {
+  const user = await getCurrentUser();
+
+  if (user) {
+    await updateUser({
+      id: user?.id,
+      data: {
+        refreshToken: null,
+      },
+    });
+  }
+
+  const cookieStore = cookies();
+
+  cookieStore.delete(BEARER_COOKIE_NAME);
+  cookieStore.delete(REFRESH_COOKIE_NAME);
+
+  redirect("/login");
 }

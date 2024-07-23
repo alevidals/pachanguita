@@ -1,7 +1,7 @@
 import { BEARER_COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/lib/constants";
-import { getJwtPayload, sign } from "@/services/auth";
-import { getUser } from "@/services/users";
 
+import { getJwtPayload, sign } from "@/app/(auth)/_actions";
+import { getUserByIdOrEmail } from "@/app/(dashboard)/users/_actions";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   const { email } = refreshTokenPayload;
 
-  const user = await getUser(String(email));
+  const user = await getUserByIdOrEmail(String(email));
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
